@@ -1,19 +1,7 @@
 import logging
 import sqlite3
-from telegram import Update, BotCommand, ForceReply
-from telegram.ext import Updater, CommandHandler, MessageHandler, ConversationHandler, filters, CallbackContext, ContextTypes, Application
-from telegram import Update, BotCommand
-from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, ContextTypes, Application, CallbackQueryHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, ContextTypes, Application, CallbackQueryHandler
 from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, ContextTypes, Application, CallbackQueryHandler
-
-import logging
-import sqlite3
-from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, ContextTypes, Application, CallbackQueryHandler
 
 # Enable logging
 logging.basicConfig(
