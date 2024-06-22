@@ -38,3 +38,11 @@ pip install python-telegram-bot --upgrade
     ```bash
     python setup_database.py
     ```
+### Running the Project
+To start the bot and begin handling user interactions, run:
+```bash
+python main.py
+```
+This will start the bot in polling mode, where it will continuously check for and respond to updates from Telegram.
+### Contributing
+Contributions to this project are welcome. Please fork the repository and submit a pull request with your features or fixes.
