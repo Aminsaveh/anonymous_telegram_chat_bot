@@ -29,6 +29,7 @@ pip install python-telegram-bot --upgrade
    ```bash
    git clone https://github.com/yourusername/telegram-anonymous-chat-bot.git
    cd telegram-anonymous-chat-bot
+   ```bash
 2. **Create a Bot**:
     - Talk to @BotFather on Telegram to create a new bot and receive a token.
     - Replace 'YOUR_BOT_TOKEN' in the main.py with your new token.
@@ -36,3 +37,4 @@ pip install python-telegram-bot --upgrade
     - Run the setup_database.py to set up the initial database.
     ```bash
     python setup_database.py
+    ```bash
