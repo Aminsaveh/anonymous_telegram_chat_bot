@@ -3,7 +3,7 @@ import sqlite3
 from telegram.ext import CommandHandler, MessageHandler, ConversationHandler, filters, ContextTypes, Application, CallbackQueryHandler
 from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
 
-# Enable logging
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -12,24 +12,19 @@ logger = logging.getLogger(__name__)
 
 DATABASE = 'chat.db'
 
-# Define states for the conversation
 ASKING_ID, ASKING_MESSAGE, ASKING_HISTORY_ID, ASKING_REPLY_MESSAGE = range(4)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /start is issued."""
     user = update.effective_user
     await update.message.reply_html(
         rf'Hi {user.mention_html()}! Use /register to get your anonymous ID.',
     )
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Register the user and assign an anonymous ID."""
     user = update.effective_user
 
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    
-    # Check if the user is already registered
     c.execute("SELECT user_id FROM users WHERE telegram_id = ?", (user.id,))
     result = c.fetchone()
 
@@ -45,33 +40,24 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     conn.close()
 
 async def ask_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Ask the user for the ID of the recipient."""
     await update.message.reply_text('Please enter the ID of the person you want to message:')
     return ASKING_ID
 
 async def ask_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Store the ID and ask for the message."""
     context.user_data['recipient_id'] = int(update.message.text)
     await update.message.reply_text('Please enter the message you want to send:')
     return ASKING_MESSAGE
 
 async def send_anonymous_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Send the anonymous message to the specified ID and save to DB."""
     sender_telegram_id = update.effective_user.id
     recipient_id = context.user_data['recipient_id']
     message = update.message.text
 
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-
-    # Get sender user_id from telegram_id
     c.execute("SELECT user_id FROM users WHERE telegram_id = ?", (sender_telegram_id,))
     sender_id = c.fetchone()[0]
-    
-    # Ensure sender and recipient IDs are ordered for uniqueness
     participant1_id, participant2_id = sorted([sender_id, recipient_id])
-
-    # Get or create chatroom
     c.execute("""
         SELECT chatroom_id FROM chatrooms 
         WHERE (participant1_id = ? AND participant2_id = ?) 
@@ -86,14 +72,10 @@ async def send_anonymous_message(update: Update, context: ContextTypes.DEFAULT_T
                   (participant1_id, participant2_id))
         conn.commit()
         chatroom_id = c.lastrowid
-    
-    # Save message to DB
     c.execute("INSERT INTO messages (chatroom_id, sender_id, message) VALUES (?, ?, ?)", 
               (chatroom_id, sender_id, message))
     conn.commit()
     message_id = c.lastrowid
-
-    # Fetch the telegram ID of the recipient
     c.execute("SELECT telegram_id FROM users WHERE user_id = ?", (recipient_id,))
     result = c.fetchone()
     conn.close()
@@ -111,7 +93,6 @@ async def send_anonymous_message(update: Update, context: ContextTypes.DEFAULT_T
     return ConversationHandler.END
 
 async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Handle reply button click."""
     query = update.callback_query
     query_data = query.data.split('_')
     message_id = query_data[1]
@@ -123,7 +104,6 @@ async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ASKING_REPLY_MESSAGE
 
 async def send_reply_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Send the reply message to the original sender."""
     reply_message = update.message.text
     recipient_telegram_id = update.effective_user.id
     message_id = context.user_data['reply_message_id']
@@ -131,22 +111,14 @@ async def send_reply_message(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-
-    # Get recipient user_id from telegram_id
     c.execute("SELECT user_id FROM users WHERE telegram_id = ?", (recipient_telegram_id,))
     recipient_id = c.fetchone()[0]
-
-    # Get the original sender user_id from the message_id
     c.execute("SELECT sender_id FROM messages WHERE message_id = ?", (message_id,))
     sender_id = c.fetchone()[0]
-
-    # Save reply message to DB
     c.execute("INSERT INTO messages (chatroom_id, sender_id, message) VALUES (?, ?, ?)", 
               (chatroom_id, recipient_id, reply_message))
     conn.commit()
     new_message_id = c.lastrowid
-
-    # Fetch the telegram ID of the original sender
     c.execute("SELECT telegram_id FROM users WHERE user_id = ?", (sender_id,))
     result = c.fetchone()
     conn.close()
@@ -164,31 +136,22 @@ async def send_reply_message(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Cancel the conversation."""
     await update.message.reply_text('Operation cancelled.')
     return ConversationHandler.END
 
 async def ask_history_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Ask the user for the ID of the person to fetch history with."""
     await update.message.reply_text('Please enter the ID of the person you want to see the history with:')
     return ASKING_HISTORY_ID
 
 async def show_history(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Fetch and send the message history with a specified user."""
     sender_telegram_id = update.effective_user.id
     recipient_id = int(update.message.text)
 
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-
-    # Get sender user_id from telegram_id
     c.execute("SELECT user_id FROM users WHERE telegram_id = ?", (sender_telegram_id,))
     sender_id = c.fetchone()[0]
-
-    # Ensure sender and recipient IDs are ordered for uniqueness
     participant1_id, participant2_id = sorted([sender_id, recipient_id])
-
-    # Get the chatroom ID
     c.execute("""
         SELECT chatroom_id FROM chatrooms 
         WHERE (participant1_id = ? AND participant2_id = ?) 
@@ -198,7 +161,6 @@ async def show_history(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     
     if result:
         chatroom_id = result[0]
-        # Fetch messages from the chatroom
         c.execute("SELECT sender_id, message, timestamp FROM messages WHERE chatroom_id = ? ORDER BY timestamp ASC", 
                   (chatroom_id,))
         messages = c.fetchall()
@@ -214,7 +176,6 @@ async def show_history(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     return ConversationHandler.END
 
 async def set_commands(application: Application) -> int:
-    """Set the bot's commands menu."""
     commands = [
         BotCommand("start", "Start the bot"),
         BotCommand("register", "Register and get your anonymous ID"),
@@ -227,12 +188,12 @@ async def set_commands(application: Application) -> int:
 
 
 def main() -> None:
-    """Start the bot."""
-    # Replace 'YOUR_TOKEN' with the token you got from the BotFather
-    application = Application.builder().token("YOUR_TOKEN").build()
 
-    # Set the bot's commands menu
-    application.add_handler(CommandHandler("setcommands", lambda update, context: set_commands(application)))
+    application = Application.builder().token("TOKEN").build()
+
+
+    application.add_handler(CommandHandler("setcommands",
+     lambda update, context: set_commands(application)))
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("register", register))
 
@@ -265,10 +226,8 @@ def main() -> None:
     application.add_handler(history_conv_handler)
     application.add_handler(reply_conv_handler)
 
- # Set the bot's commands when the application starts
     set_commands(application)
 
-    # Start the Bot
     application.run_polling()
 
    
