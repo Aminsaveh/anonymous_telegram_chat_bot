@@ -23,7 +23,7 @@ To install the required Python library, run the following command in your termin
 
 ```bash
 pip install python-telegram-bot --upgrade
-
+```
 ## Setup
 1. **Clone the Repository**:
    ```bash
